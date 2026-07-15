@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Distribution Task</title>
+<style>
+
+
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --border: #d8d4cc;
+    --text: #1a1916;
+    --muted: #7a7670;
+    --accent: #2a2a2a;
+    --correct: #2d6a2d;
+    --wrong: #8a1f1f;
+    --scale-fill: #1a1916;
+    --scale-track: #e0ddd8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  /* ── SETUP ── */
+  #setup-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.8rem;
+    max-width: 500px;
+    width: 100%;
+  }
+
+  .setup-title {
+    font-family: sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-align: center;
+  }
+
+  .setup-subtitle {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-align: center;
+    margin-top: -1rem;
+  }
+
+  .instructions {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.4rem 1.6rem;
+    width: 100%;
+  }
+
+  .instructions p {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+  }
+
+  .instructions ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .instructions ul li {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    padding-left: 1.2rem;
+    position: relative;
+    color: #333;
+  }
+
+  .instructions ul li::before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .setup-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 100%;
+  }
+
+  .setup-field label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .setup-field input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: sans-serif;
+    font-size: 1rem;
+    padding: 0.7rem 0.9rem;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .setup-field input:focus { border-color: var(--accent); }
+
+  .btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-family: sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0.9rem 2rem;
+    width: 100%;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:hover { opacity: 0.8; }
+  .btn:active { transform: scale(0.99); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn.secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1.5px solid var(--border);
+  }
+  .btn.secondary:hover { border-color: var(--accent); opacity: 1; }
+
+  /* ── FIXATION ── */
+  #fixation-screen {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 260px;
+  }
+
+  #fixation-cross {
+    font-family: sans-serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    animation: pulse 0.5s ease;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ── BREAK ── */
+  #break-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 480px;
+    text-align: center;
+  }
+
+  #break-screen h2 {
+    font-family: sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  #break-screen p { font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+
+  /* ── EXPERIMENT ── */
+  #experiment-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 560px;
+    gap: 0;
+  }
+
+  /* Boxes */
+  .boxes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .box {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 2.8rem 1rem 2.2rem;
+    text-align: center;
+    cursor: default;
+    position: relative;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+
+  .box.clickable {
+    cursor: pointer;
+    border-style: dashed;
+    border-color: #aaa;
+  }
+  .box.clickable:hover { background: #f0ede8; border-color: var(--accent); }
+
+  .box.selected-correct { border-color: var(--correct); background: #eaf5ea; border-style: solid; }
+  .box.selected-wrong   { border-color: var(--wrong);   background: #f5eaea; border-style: solid; }
+
+  .box-number {
+    font-family: sans-serif;
+    font-size: 3rem;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    min-height: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    letter-spacing: -0.03em;
+  }
+
+  .box-number.shown { opacity: 1; transform: translateY(0); }
+
+  /* Belief Scale */
+  #scale-wrapper {
+    width: 100%;
+    margin-top: 1.4rem;
+    opacity: 0;
+    transition: opacity 0.35s;
+    pointer-events: none;
+  }
+
+  #scale-wrapper.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  #scale-labels-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .scale-side-label {
+    font-family: sans-serif;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  /* The stops row: 11 evenly spaced columns */
+  #scale-stops {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    position: relative;
+    /* Half a column of padding each side so the track runs centre-to-centre */
+    padding: 0;
+  }
+
+  /* Horizontal track line — spans from centre of first to centre of last stop.
+     Each column is 1/11 of total width, so half-column = 100%/22.
+     We inset by that amount on each side. */
+  #scale-stops::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: calc(100% / 22);
+    right: calc(100% / 22);
+    height: 5px;
+    background: var(--scale-track);
+    border-radius: 3px;
+    z-index: 0;
+  }
+
+  /* Fill bar — positioned via JS */
+  #scale-fill-bar {
+    position: absolute;
+    top: 10px;
+    height: 5px;
+    background: var(--scale-fill);
+    border-radius: 3px;
+    z-index: 1;
+    transition: left 0.12s, width 0.12s;
+    pointer-events: none;
+  }
+
+  .scale-stop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    padding-top: 0; /* thumb sits at top */
+  }
+
+  /* The thumb circle — only rendered on the active stop */
+  .stop-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    flex-shrink: 0;
+  }
+
+  .scale-stop.active-stop .stop-thumb {
+    background: var(--accent);
+    border: 3px solid var(--bg);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+
+  .stop-tick {
+    width: 1px;
+    height: 6px;
+    background: var(--border);
+  }
+
+  .scale-stop.active-stop .stop-tick {
+    background: var(--accent);
+  }
+
+  .stop-label {
+    font-size: 0.6rem;
+    color: var(--muted);
+    font-family: sans-serif;
+  }
+
+  .scale-stop.active-stop .stop-label {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Question / confirm area */
+  #question-area {
+    margin-top: 1.6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    width: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  #question-area.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  #question-prompt {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  #confirm-btn {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  /* Feedback */
+  #feedback {
+    text-align: center;
+    min-height: 1.8rem;
+    margin-top: 0.8rem;
+    font-family: sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.25s;
+    letter-spacing: 0.04em;
+  }
+  #feedback.visible { opacity: 1; }
+
+  /* Trial counter */
+  #trial-counter {
+    font-family: sans-serif;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 1.2rem;
+    text-align: center;
+  }
+
+  /* ── DONE ── */
+  #done-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: center;
+    max-width: 440px;
+  }
+
+  #done-screen h2 {
+    font-family: sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.1rem;
+  }
+
+  .stat-box .s-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+  }
+
+  .stat-box .s-value {
+    font-family: sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup-screen">
+  <div>
+    <div class="setup-title">Distribution Judgment Task</div>
+    <div class="setup-subtitle" style="margin-top:0.5rem;">Belief tracking edition</div>
+  </div>
+
+  <div class="instructions">
+    <p>Instructions</p>
+    <ul>
+      <li>Two boxes will show numbers. One box tends to draw from a higher distribution than the other — but this <strong>may change</strong> during the sequence.</li>
+      <li>After each number appears, <strong>adjust the scale</strong> to reflect your current belief about which box is drawing from the higher distribution. Centre = 50/50. Sliding right means you think the <strong>right</strong> box is higher.</li>
+      <li>The scale has 10% steps from 0 to 100.</li>
+      <li>When the sequence ends, adjust the scale one final time and click <strong>Confirm choice</strong>.</li>
+    </ul>
+  </div>
+
+  <div class="setup-field">
+    <label>Participant ID</label>
+    <input id="pid-input" type="text" placeholder="e.g. P001" />
+  </div>
+
+  <button class="btn" onclick="startExperiment()">Begin Task</button>
+</div>
+
+<!-- FIXATION -->
+<div id="fixation-screen">
+  <div id="fixation-cross">+</div>
+</div>
+
+<!-- BREAK -->
+<div id="break-screen">
+  <h2>Rest break</h2>
+  <p>You have completed a set of trials. Take a moment to rest, then continue when you are ready.</p>
+  <button class="btn" onclick="resumeFromBreak()">Continue</button>
+</div>
+
+<!-- EXPERIMENT -->
+<div id="experiment-screen">
+  <div class="boxes">
+    <div class="box" id="box-left">
+      <div class="box-number" id="left-number"></div>
+    </div>
+    <div class="box" id="box-right">
+      <div class="box-number" id="right-number"></div>
+    </div>
+  </div>
+
+  <!-- Belief Scale -->
+  <div id="scale-wrapper">
+    <div id="scale-labels-top">
+      <span class="scale-side-label">← Left higher</span>
+      <span class="scale-side-label">Right higher →</span>
+    </div>
+    <div id="scale-stops">
+      <div id="scale-fill-bar"></div>
+      <!-- stops injected by JS -->
+    </div>
+  </div>
+
+  <!-- Question + Confirm -->
+  <div id="question-area">
+    <div id="question-prompt">Sequence complete. You may adjust your belief before confirming.</div>
+    <button class="btn" id="confirm-btn" onclick="confirmFinalChoice()">Confirm choice</button>
+  </div>
+
+  <div id="feedback"></div>
+</div>
+
+<!-- DONE -->
+<div id="done-screen">
+  <h2>Task Complete</h2>
+  <div class="stat-grid">
+    <div class="stat-box">
+      <div class="s-label">Belief Score</div>
+      <div class="s-value" id="final-belief-score">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="s-label">Final Payout</div>
+      <div class="s-value" id="final-payout">—</div>
+    </div>
+  </div>
+  <button class="btn" onclick="downloadResults()">Download Results CSV</button>
+</div>
+
+<script>
+// ─── Constants ───────────────────────────────────────────────────────────────
+const MU_HIGH           = 53;
+const MU_LOW            = 47;
+const SIGMA_M           = 15;
+const N_FRAMES          = 30;         // fixed, not shown to participant
+const FRAME_DELAY_MS    = 2500;       // ms between numbers
+const BLANK_PAUSE_MS    = 200;        // brief blank between frames
+const FEEDBACK_PAUSE_MS = 600;
+const FIXATION_MS       = 600;
+const BREAK_EVERY       = 5;
+const CSV_PATH          = "sequences.csv";
+
+// Scale: 0–100 in 10% steps → 11 stops
+const SCALE_STOPS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let sequences     = [];
+let pid           = "";
+let trialIndex    = 0;
+let correctCount  = 0;
+let results       = [];
+let scaleValue    = 50;   // current discrete scale position (0–100)
+let frameBeliefs  = [];   // belief recorded after each frame (length = N_FRAMES)
+let sequenceRunning = false;
+let awaitingConfirm = false;
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function randn() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function normalSample(mu, sigma) { return mu + sigma * randn(); }
+
+function parseTuple(str) {
+  const clean = str.replace(/[()]/g, "").trim();
+  const parts  = clean.split(",");
+  return { value: parseFloat(parts[0]), switched: parseInt(parts[1]) };
+}
+
+function parseCSV(text) {
+  const lines   = text.trim().split("\n");
+  const headers = lines[0].split(",");
+  const rows    = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = [];
+    let inQuote = false, cur = "";
+    for (const ch of lines[i]) {
+      if (ch === '"') { inQuote = !inQuote; continue; }
+      if (ch === ',' && !inQuote) { cols.push(cur); cur = ""; }
+      else cur += ch;
+    }
+    cols.push(cur);
+    const row = {};
+    headers.forEach((h, idx) => row[h.trim()] = cols[idx]?.trim() ?? "");
+    rows.push(row);
+  }
+  return rows;
+}
+
+// ─── Scale setup ─────────────────────────────────────────────────────────────
+function buildScaleTicks() {
+  const container = document.getElementById("scale-stops");
+  // Remove any existing stops (keep fill bar)
+  container.querySelectorAll(".scale-stop").forEach(el => el.remove());
+
+  SCALE_STOPS.forEach(v => {
+    const stop = document.createElement("div");
+    stop.className = "scale-stop";
+    stop.dataset.value = v;
+    stop.innerHTML = `
+      <div class="stop-thumb"></div>
+      <div class="stop-tick"></div>
+      <div class="stop-label">${v}</div>`;
+    stop.addEventListener("click", () => setScale(v));
+    container.appendChild(stop);
+  });
+}
+
+function setScale(value) {
+  scaleValue = value;
+
+  // Update active stop styling
+  document.querySelectorAll(".scale-stop").forEach(el => {
+    el.classList.toggle("active-stop", parseInt(el.dataset.value) === value);
+  });
+
+  // Update fill bar using the active stop's position
+  const activeStop = document.querySelector(`.scale-stop[data-value="${value}"]`);
+  const stopsEl    = document.getElementById("scale-stops");
+  const fillEl     = document.getElementById("scale-fill-bar");
+  const midStop    = document.querySelector(`.scale-stop[data-value="50"]`);
+
+  if (activeStop && midStop) {
+    const stopsRect  = stopsEl.getBoundingClientRect();
+    const activeRect = activeStop.getBoundingClientRect();
+    const midRect    = midStop.getBoundingClientRect();
+
+    const activeCx = activeRect.left + activeRect.width / 2 - stopsRect.left;
+    const midCx    = midRect.left    + midRect.width    / 2 - stopsRect.left;
+
+    if (value === 50) {
+      fillEl.style.left  = midCx + "px";
+      fillEl.style.width = "0px";
+    } else if (value > 50) {
+      fillEl.style.left  = midCx + "px";
+      fillEl.style.width = (activeCx - midCx) + "px";
+    } else {
+      fillEl.style.left  = activeCx + "px";
+      fillEl.style.width = (midCx - activeCx) + "px";
+    }
+  }
+}
+
+function initScaleDrag() {
+  const stopsEl = document.getElementById("scale-stops");
+
+  function valueFromX(clientX) {
+    // Find the stop whose centre is closest to clientX
+    let best = 50, bestDist = Infinity;
+    document.querySelectorAll(".scale-stop").forEach(el => {
+      const rect = el.getBoundingClientRect();
+      const cx   = rect.left + rect.width / 2;
+      const dist = Math.abs(clientX - cx);
+      if (dist < bestDist) { bestDist = dist; best = parseInt(el.dataset.value); }
+    });
+    return best;
+  }
+
+  function onMove(e) {
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    setScale(valueFromX(x));
+  }
+
+  function onUp() {
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup",   onUp);
+    window.removeEventListener("touchmove", onMove);
+    window.removeEventListener("touchend",  onUp);
+  }
+
+  stopsEl.addEventListener("mousedown", e => {
+    setScale(valueFromX(e.clientX));
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup",   onUp);
+  });
+
+  stopsEl.addEventListener("touchstart", e => {
+    setScale(valueFromX(e.touches[0].clientX));
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchend",  onUp);
+  });
+}
+
+// ─── Experiment flow ──────────────────────────────────────────────────────────
+async function startExperiment() {
+  pid = document.getElementById("pid-input").value.trim() || "anonymous";
+
+  const resp = await fetch(CSV_PATH);
+  if (!resp.ok) {
+    alert(`Could not load ${CSV_PATH}. Make sure the file is in the same folder and you are running via a local server.`);
+    return;
+  }
+  const text = await resp.text();
+  sequences  = parseCSV(text);
+  if (!sequences.length) { alert("CSV appears empty."); return; }
+
+  buildScaleTicks();
+  initScaleDrag();
+
+  document.getElementById("setup-screen").style.display = "none";
+  runTrial();
+}
+
+async function showFixation() {
+  document.getElementById("fixation-screen").style.display = "flex";
+  await sleep(FIXATION_MS);
+  document.getElementById("fixation-screen").style.display = "none";
+}
+
+function showBreak() {
+  document.getElementById("experiment-screen").style.display = "none";
+  document.getElementById("break-screen").style.display = "flex";
+}
+
+function resumeFromBreak() {
+  document.getElementById("break-screen").style.display = "none";
+  runTrial();
+}
+
+async function runTrial() {
+  if (trialIndex >= 1 || trialIndex >= sequences.length) { showDone(); return; }
+
+  await showFixation();
+
+  const row      = sequences[trialIndex];
+  const highSide = row["high_side_final"];
+
+  // Collect frames (up to N_FRAMES; may be fewer if CSV has fewer)
+  const frames = [];
+  for (let t = 1; t <= N_FRAMES; t++) {
+    const lKey = `left_${t}`, rKey = `right_${t}`;
+    if (!row[lKey]) break;
+    frames.push({
+      left:  parseTuple(row[lKey]),
+      right: parseTuple(row[rKey]),
+    });
+  }
+
+  // Reset state
+  frameBeliefs    = [];
+  awaitingConfirm = false;
+  setScale(50);
+
+  const screen = document.getElementById("experiment-screen");
+  screen.style.display = "flex";
+  setScale(50); // re-measure now that DOM is visible
+
+  clearBoxStyle();
+  setNumber("left",  "", false);
+  setNumber("right", "", false);
+  setQuestionAreaVisible(false);
+  setFeedback("", "");
+  setScaleActive(false);
+
+  // ── Play frames ──
+  sequenceRunning = true;
+  for (let t = 0; t < frames.length; t++) {
+    setNumber("left",  Math.round(frames[t].left.value).toString(),  true);
+    setNumber("right", Math.round(frames[t].right.value).toString(), true);
+
+    // Activate scale for interaction
+    setScaleActive(true);
+
+    await sleep(FRAME_DELAY_MS);
+
+    setNumber("left",  "", false);
+    setNumber("right", "", false);
+    setScaleActive(false);
+
+    // Record current belief immediately after this frame's display
+    frameBeliefs.push(scaleValue);
+
+    await sleep(BLANK_PAUSE_MS);
+  }
+  sequenceRunning = false;
+
+  // ── Confirm phase ──
+  awaitingConfirm = true;
+  setScaleActive(true);
+  setQuestionAreaVisible(true);
+
+  // Store for confirm handler
+  window._currentHighSide = highSide;
+  window._currentRow      = row;
+  window._currentFrames   = frames;
+}
+
+function confirmFinalChoice() {
+  if (!awaitingConfirm) return;
+  awaitingConfirm = false;
+  setQuestionAreaVisible(false);
+  setScaleActive(false);
+
+  const finalBelief = scaleValue;              // 0–100, P(right)
+  const finalP      = finalBelief / 100;       // 0–1
+  const chosen      = finalP > 0.5 ? "right" : finalP < 0.5 ? "left" : "neither";
+  const highSide    = window._currentHighSide;
+  const row         = window._currentRow;
+  const frames      = window._currentFrames;
+  const isCorrect   = (chosen === highSide);
+
+  // Brier score: 1 - (p_right - true_state)²
+  // true_state = 1 if right is higher, 0 if left is higher
+  const trueState  = highSide === "right" ? 1 : 0;
+  const brierScore = 1 - Math.pow(finalP - trueState, 2);
+
+  // Payoff: pre-generated in CSV for the chosen side
+  const payoff = chosen === "left"  ? parseFloat(row["payout_if_left"])
+               : chosen === "right" ? parseFloat(row["payout_if_right"])
+               : (parseFloat(row["payout_if_left"]) + parseFloat(row["payout_if_right"])) / 2;
+
+  // Store for done screen
+  window._lastBrierScore = brierScore;
+  window._lastPayoff     = payoff;
+
+  if (chosen !== "neither") {
+    document.getElementById(`box-${chosen}`).classList.add(isCorrect ? "selected-correct" : "selected-wrong");
+  }
+
+  // Build result row
+  const resultRow = { participant_id: pid, trial: trialIndex + 1 };
+  for (let t = 1; t <= N_FRAMES; t++) {
+    resultRow[`left_${t}`]         = row[`left_${t}`]  ?? "";
+    resultRow[`right_${t}`]        = row[`right_${t}`] ?? "";
+    resultRow[`belief_after_${t}`] = frameBeliefs[t - 1] ?? "";
+  }
+  resultRow["high_side_final"] = highSide;
+  resultRow["final_belief"]    = finalBelief;
+  resultRow["chosen_side"]     = chosen;
+  resultRow["correct"]         = isCorrect ? 1 : 0;
+  resultRow["brier_score"]     = brierScore.toFixed(4);
+  resultRow["payoff"]          = payoff.toFixed(4);
+  results.push(resultRow);
+
+  setFeedback(isCorrect ? "Correct ✓" : "Incorrect ✗", isCorrect ? "correct" : "wrong");
+
+  trialIndex++;
+
+  setTimeout(() => {
+    setFeedback("", "");
+    clearBoxStyle();
+    document.getElementById("experiment-screen").style.display = "none";
+    runTrial();
+  }, FEEDBACK_PAUSE_MS);
+}
+
+function showDone() {
+  document.getElementById("experiment-screen").style.display = "none";
+  const done = document.getElementById("done-screen");
+  done.style.display = "flex";
+  const bs = window._lastBrierScore ?? 0;
+  const po = window._lastPayoff     ?? 0;
+  document.getElementById("final-belief-score").textContent = bs.toFixed(2);
+  document.getElementById("final-payout").textContent       = po.toFixed(1);
+}
+
+function downloadResults() {
+  if (!results.length) return;
+  const cols  = Object.keys(results[0]);
+  const lines = [cols.join(",")];
+  for (const r of results) lines.push(cols.map(c => `"${r[c]}"`).join(","));
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const a    = document.createElement("a");
+  a.href     = URL.createObjectURL(blob);
+  a.download = `results_${pid}.csv`;
+  a.click();
+}
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+function setNumber(side, text, show) {
+  const el = document.getElementById(`${side}-number`);
+  el.textContent = text;
+  el.classList.toggle("shown", show);
+}
+
+function clearBoxStyle() {
+  document.getElementById("box-left").className  = "box";
+  document.getElementById("box-right").className = "box";
+}
+
+function setScaleActive(on) {
+  document.getElementById("scale-wrapper").classList.toggle("active", on);
+}
+
+function setQuestionAreaVisible(v) {
+  document.getElementById("question-area").classList.toggle("visible", v);
+}
+
+function setFeedback(msg, cls) {
+  const el = document.getElementById("feedback");
+  el.textContent = msg;
+  el.style.color = cls === "correct" ? "var(--correct)" : cls === "wrong" ? "var(--wrong)" : "var(--text)";
+  el.classList.toggle("visible", !!msg);
+}
+</script>
+</body>
+</html>
