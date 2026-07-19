@@ -32,14 +32,16 @@ def generate_trial(rng, h):
 
         mu_left  = MU_HIGH if left_is_high else MU_LOW
         mu_right = MU_LOW  if left_is_high else MU_HIGH
-
+        
         sample_l = rng.normal(mu_left,  SIGMA_M)
         sample_r = rng.normal(mu_right, SIGMA_M)
 
-        # Each entry: (sample_value, switched_this_frame)
-        # switched is always 0 for frame 0 (no swap possible on first frame)
-        tuples_left.append((round(sample_l, 4), int(switched)))
-        tuples_right.append((round(sample_r, 4), int(switched)))
+        # Round to nearest integer, clip at 0
+        sample_l = max(0, int(round(sample_l)))
+        sample_r = max(0, int(round(sample_r)))
+
+        tuples_left.append((sample_l, int(switched)))
+        tuples_right.append((sample_r, int(switched)))
 
     final_high_side = "left" if left_is_high else "right"
     return tuples_left, tuples_right, final_high_side
