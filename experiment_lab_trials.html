@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Distribution Task</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  /* SETUP */
+  #setup-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 480px;
+    width: 100%;
+  }
+
+  #setup-screen h1 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .instructions {
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 1.2rem 1.5rem;
+    width: 100%;
+  }
+
+  .instructions p {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 0.6rem;
+  }
+
+  .instructions ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .instructions ul li {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    padding-left: 1.4rem;
+    position: relative;
+  }
+
+  .instructions ul li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+  }
+
+  .setup-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 100%;
+  }
+
+  .setup-field label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #555;
+  }
+
+  .setup-field input {
+    background: #f5f5f5;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1rem;
+    padding: 0.65rem 0.9rem;
+    outline: none;
+    width: 100%;
+  }
+
+  .setup-field input:focus { border-color: #000; }
+
+  .btn {
+    background: #000;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0.85rem 2rem;
+    width: 100%;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.75; }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* EXPERIMENT */
+  #experiment-screen { display: none; width: 100%; max-width: 600px; }
+
+  /* FIXATION */
+  #fixation-screen {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 600px;
+    height: 200px;
+  }
+
+  #fixation-cross {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #000;
+    line-height: 1;
+  }
+
+  /* BREAK */
+  #break-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 480px;
+    text-align: center;
+  }
+
+  #break-screen h2 { font-size: 1.4rem; font-weight: bold; }
+  #break-screen p { font-size: 0.9rem; color: #444; line-height: 1.6; }
+
+  /* FRAME */
+  #frame-label {
+    text-align: center;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #666;
+    margin-bottom: 1rem;
+    min-height: 1.2em;
+  }
+
+  .boxes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .box {
+    background: #f5f5f5;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+
+  .box:hover { background: #ebebeb; }
+  .box.active { border-color: #000; background: #e0e0e0; }
+  .box.selected-correct { border-color: #000; background: #d6f5d6; }
+  .box.selected-wrong   { border-color: #000; background: #f5d6d6; }
+
+  .box-tag {
+    position: absolute;
+    top: 0.6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #888;
+  }
+
+  .box-number {
+    font-size: 3rem;
+    font-weight: bold;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    min-height: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+  }
+
+  .box-number.shown { opacity: 1; transform: scale(1); }
+
+  /* QUESTION PROMPT */
+  #question-prompt {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #333;
+    margin-bottom: 1rem;
+    min-height: 1.4em;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #question-prompt.visible { opacity: 1; }
+
+  /* FEEDBACK */
+  #feedback {
+    text-align: center;
+    min-height: 2rem;
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  #feedback.visible { opacity: 1; }
+
+  /* DONE */
+  #done-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: center;
+    max-width: 420px;
+  }
+
+  #done-screen h2 { font-size: 1.6rem; font-weight: bold; }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .stat-box {
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 1.1rem;
+  }
+
+  .stat-box .s-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #777;
+    margin-bottom: 0.3rem;
+  }
+
+  .stat-box .s-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #000;
+  }
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup-screen">
+  <h1>Distribution Judgment Task</h1>
+
+  <div class="instructions">
+    <p>How to play:</p>
+    <ul>
+      <li>On each round, two boxes take turns showing you numbers. One box will tend to show higher numbers than the other — but it may <strong>switch</strong> throughout the trial.</li>
+      <li>Your goal is to track which box is higher <strong>by the end</strong> of the sequence, not which one started out higher.</li>
+      <li>After the last number appears, <strong>click the box</strong> you think finished higher.</li>
+    </ul>
+  </div>
+
+  <div class="setup-field">
+    <label>Participant ID</label>
+    <input id="pid-input" type="text" placeholder="e.g. P001" />
+  </div>
+
+  <button class="btn" onclick="startExperiment()">Begin Task</button>
+</div>
+
+<!-- FIXATION -->
+<div id="fixation-screen">
+  <div id="fixation-cross">+</div>
+</div>
+
+<!-- BREAK -->
+<div id="break-screen">
+  <h2>Rest break</h2>
+  <p>You have completed a set of trials. Take a moment to rest, then click the button below when you are ready to continue.</p>
+  <button class="btn" onclick="resumeFromBreak()">Continue</button>
+</div>
+
+<!-- EXPERIMENT -->
+<div id="experiment-screen">
+  <div id="frame-label"></div>
+
+  <div class="boxes">
+    <div class="box" id="box-left" onclick="choose('left')">
+      <div class="box-number" id="left-number"></div>
+    </div>
+    <div class="box" id="box-right" onclick="choose('right')">
+      <div class="box-number" id="right-number"></div>
+    </div>
+  </div>
+
+  <div id="question-prompt">Which box was drawing from the higher average?</div>
+  <div id="feedback"></div>
+</div>
+
+<!-- DONE -->
+<div id="done-screen">
+  <h2>Task Complete</h2>
+  <div class="stat-grid">
+    <div class="stat-box">
+      <div class="s-label">Accuracy</div>
+      <div class="s-value" id="final-acc">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="s-label">Correct</div>
+      <div class="s-value" id="final-correct">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="s-label">Trials</div>
+      <div class="s-value" id="final-trials">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="s-label">Wrong</div>
+      <div class="s-value" id="final-wrong">—</div>
+    </div>
+  </div>
+  <button class="btn" onclick="downloadResults()">Download Results CSV</button>
+</div>
+
+<script>
+const MU_HIGH     = 53;
+const MU_LOW      = 47;
+const SIGMA_M     = 15;
+const FRAME_DELAY = 1000;
+const FEEDBACK_TO_NEXT_MS = 500;
+const FIXATION_MS = 500;
+const BREAK_EVERY = 25;  // ← edit this to change break frequency (trials per set)
+const SEQUENCES_CSV = `left_1,left_2,left_3,left_4,left_5,left_6,left_7,left_8,left_9,left_10,left_11,left_12,right_1,right_2,right_3,right_4,right_5,right_6,right_7,right_8,right_9,right_10,right_11,right_12,H,high_side_final
+"(31, 0)","(18, 0)","(42, 0)","(60, 0)","(64, 0)","(53, 0)","(46, 0)","(65, 0)","(42, 0)","(53, 0)","(41, 0)","(56, 0)","(64, 0)","(33, 0)","(53, 0)","(65, 0)","(60, 0)","(39, 0)","(50, 0)","(51, 0)","(61, 0)","(59, 0)","(45, 0)","(70, 0)",0.0,right
+"(40, 0)","(64, 0)","(56, 0)","(66, 0)","(54, 0)","(31, 0)","(43, 0)","(40, 0)","(48, 0)","(64, 0)","(46, 0)","(34, 0)","(35, 0)","(55, 0)","(49, 0)","(50, 0)","(51, 0)","(42, 0)","(43, 0)","(62, 0)","(49, 0)","(59, 0)","(60, 0)","(30, 0)",0.0,left
+"(60, 0)","(47, 0)","(48, 0)","(48, 0)","(60, 0)","(60, 0)","(52, 0)","(28, 0)","(38, 0)","(47, 0)","(64, 0)","(39, 0)","(49, 0)","(49, 0)","(54, 0)","(41, 0)","(40, 0)","(54, 0)","(41, 0)","(25, 0)","(53, 0)","(66, 0)","(33, 0)","(42, 0)",0.0,left
+"(27, 0)","(44, 0)","(45, 0)","(77, 0)","(56, 0)","(66, 0)","(35, 0)","(47, 0)","(50, 0)","(58, 0)","(97, 0)","(21, 0)","(54, 0)","(25, 0)","(50, 0)","(43, 0)","(50, 0)","(52, 0)","(37, 0)","(26, 0)","(25, 0)","(60, 0)","(53, 0)","(51, 0)",0.0,left
+"(47, 0)","(69, 0)","(37, 0)","(52, 0)","(68, 0)","(39, 0)","(41, 0)","(67, 0)","(52, 0)","(46, 0)","(56, 0)","(51, 0)","(38, 0)","(49, 0)","(22, 0)","(74, 0)","(40, 0)","(36, 0)","(60, 0)","(53, 0)","(37, 0)","(29, 0)","(71, 0)","(51, 0)",0.0,left
+"(56, 0)","(59, 0)","(35, 0)","(79, 0)","(75, 0)","(63, 0)","(51, 0)","(54, 0)","(52, 0)","(40, 0)","(33, 0)","(60, 0)","(41, 0)","(70, 0)","(26, 0)","(44, 0)","(30, 0)","(41, 0)","(52, 0)","(57, 0)","(34, 0)","(42, 0)","(47, 0)","(40, 0)",0.0,left
+"(68, 0)","(51, 0)","(57, 0)","(54, 0)","(81, 0)","(31, 0)","(71, 0)","(21, 0)","(45, 0)","(27, 0)","(34, 0)","(97, 0)","(55, 0)","(37, 0)","(50, 0)","(50, 0)","(34, 0)","(38, 0)","(36, 0)","(45, 0)","(34, 0)","(25, 0)","(31, 0)","(29, 0)",0.0,left
+"(52, 0)","(43, 0)","(41, 0)","(43, 0)","(39, 0)","(49, 0)","(47, 0)","(46, 0)","(53, 0)","(51, 0)","(51, 0)","(61, 0)","(79, 0)","(65, 0)","(51, 0)","(49, 0)","(60, 0)","(58, 0)","(42, 0)","(84, 0)","(42, 0)","(36, 0)","(60, 0)","(60, 0)",0.0,right
+"(40, 0)","(43, 0)","(49, 0)","(43, 0)","(41, 0)","(73, 0)","(42, 0)","(42, 0)","(73, 0)","(73, 0)","(43, 0)","(62, 0)","(57, 0)","(51, 0)","(75, 0)","(56, 0)","(27, 0)","(30, 0)","(52, 0)","(73, 0)","(71, 0)","(60, 0)","(54, 0)","(35, 0)",0.0,right
+"(44, 0)","(74, 0)","(46, 0)","(70, 0)","(32, 0)","(37, 0)","(56, 0)","(48, 0)","(16, 0)","(23, 0)","(60, 0)","(63, 0)","(71, 0)","(64, 0)","(35, 0)","(63, 0)","(53, 0)","(58, 0)","(19, 0)","(59, 0)","(44, 0)","(75, 0)","(44, 0)","(56, 0)",0.0,right
+"(51, 0)","(45, 0)","(31, 0)","(36, 0)","(60, 0)","(60, 0)","(82, 0)","(71, 0)","(67, 0)","(23, 0)","(55, 0)","(12, 0)","(40, 0)","(59, 0)","(51, 0)","(41, 0)","(53, 0)","(66, 0)","(50, 0)","(46, 0)","(29, 0)","(41, 0)","(57, 0)","(54, 0)",0.0,right
+"(60, 0)","(43, 0)","(56, 0)","(50, 0)","(47, 0)","(51, 0)","(34, 0)","(43, 0)","(56, 0)","(52, 0)","(40, 0)","(40, 0)","(58, 0)","(49, 0)","(55, 0)","(50, 0)","(55, 0)","(59, 0)","(25, 0)","(58, 0)","(63, 0)","(67, 0)","(38, 0)","(42, 0)",0.0,left
+"(73, 0)","(31, 0)","(20, 0)","(39, 0)","(53, 0)","(52, 0)","(25, 0)","(64, 0)","(52, 0)","(48, 0)","(34, 0)","(52, 0)","(32, 0)","(60, 0)","(67, 0)","(37, 0)","(50, 0)","(73, 0)","(69, 0)","(59, 0)","(82, 0)","(55, 0)","(58, 0)","(40, 0)",0.0,right
+"(22, 0)","(49, 0)","(39, 0)","(49, 0)","(48, 0)","(53, 0)","(74, 0)","(52, 0)","(59, 0)","(62, 0)","(58, 0)","(48, 0)","(30, 0)","(76, 0)","(52, 0)","(50, 0)","(63, 0)","(86, 0)","(48, 0)","(44, 0)","(34, 0)","(57, 0)","(43, 0)","(61, 0)",0.0,left
+"(42, 0)","(67, 0)","(24, 0)","(83, 0)","(54, 0)","(48, 0)","(52, 0)","(60, 0)","(34, 0)","(68, 0)","(49, 0)","(42, 0)","(23, 0)","(66, 0)","(9, 0)","(60, 0)","(30, 0)","(52, 0)","(63, 0)","(77, 0)","(73, 0)","(46, 0)","(57, 0)","(39, 0)",0.0,right
+"(54, 0)","(39, 0)","(35, 0)","(51, 0)","(45, 0)","(58, 0)","(55, 0)","(46, 0)","(32, 0)","(39, 0)","(52, 0)","(61, 0)","(30, 0)","(70, 0)","(28, 0)","(50, 0)","(56, 0)","(63, 0)","(57, 0)","(48, 0)","(34, 0)","(40, 0)","(54, 0)","(64, 0)",0.0,right
+"(43, 0)","(31, 0)","(40, 0)","(73, 0)","(58, 0)","(49, 0)","(83, 0)","(57, 0)","(57, 0)","(47, 0)","(47, 0)","(57, 0)","(55, 0)","(46, 0)","(50, 0)","(66, 0)","(11, 0)","(31, 0)","(29, 0)","(71, 0)","(74, 0)","(22, 0)","(39, 0)","(20, 0)",0.0,left
+"(44, 0)","(43, 0)","(60, 0)","(37, 0)","(60, 0)","(64, 0)","(75, 0)","(57, 0)","(45, 0)","(37, 0)","(91, 0)","(48, 0)","(66, 0)","(55, 0)","(22, 0)","(51, 0)","(35, 0)","(51, 0)","(40, 0)","(38, 0)","(41, 0)","(11, 0)","(41, 0)","(43, 0)",0.0,left
+"(30, 0)","(25, 0)","(50, 0)","(56, 0)","(41, 0)","(72, 0)","(52, 0)","(65, 0)","(47, 0)","(46, 0)","(54, 0)","(59, 0)","(62, 0)","(63, 0)","(48, 0)","(27, 0)","(81, 0)","(36, 0)","(40, 0)","(48, 0)","(39, 0)","(27, 0)","(45, 0)","(57, 0)",0.0,right
+"(33, 0)","(89, 0)","(50, 0)","(72, 0)","(45, 0)","(65, 0)","(47, 0)","(67, 0)","(41, 0)","(39, 0)","(49, 0)","(69, 0)","(60, 0)","(53, 0)","(59, 0)","(39, 0)","(40, 0)","(69, 0)","(52, 0)","(13, 0)","(12, 0)","(44, 0)","(32, 0)","(32, 0)",0.0,left
+"(61, 0)","(53, 0)","(53, 0)","(30, 0)","(38, 0)","(19, 0)","(75, 0)","(36, 0)","(54, 0)","(57, 0)","(65, 0)","(68, 0)","(44, 0)","(58, 0)","(44, 0)","(57, 0)","(46, 0)","(25, 0)","(51, 0)","(30, 0)","(55, 0)","(49, 0)","(23, 0)","(65, 0)",0.0,left
+"(19, 0)","(74, 0)","(34, 0)","(32, 0)","(64, 0)","(57, 0)","(57, 0)","(52, 0)","(39, 0)","(73, 0)","(67, 0)","(31, 0)","(54, 0)","(61, 0)","(53, 0)","(84, 0)","(39, 0)","(60, 0)","(64, 0)","(26, 0)","(34, 0)","(73, 0)","(53, 0)","(59, 0)",0.0,right
+"(27, 0)","(74, 0)","(51, 0)","(31, 0)","(28, 0)","(20, 0)","(63, 0)","(34, 0)","(53, 0)","(45, 0)","(50, 0)","(51, 0)","(52, 0)","(66, 0)","(54, 0)","(51, 0)","(61, 0)","(51, 0)","(68, 0)","(37, 0)","(72, 0)","(34, 0)","(50, 0)","(45, 0)",0.0,right
+"(58, 0)","(57, 0)","(75, 0)","(25, 0)","(51, 0)","(59, 0)","(47, 0)","(48, 0)","(48, 0)","(79, 0)","(58, 0)","(42, 0)","(41, 0)","(30, 0)","(30, 0)","(47, 0)","(65, 0)","(70, 0)","(36, 0)","(68, 0)","(76, 0)","(46, 0)","(95, 0)","(62, 0)",0.0,left
+"(40, 0)","(51, 0)","(53, 0)","(32, 0)","(48, 0)","(27, 0)","(46, 0)","(58, 0)","(18, 0)","(45, 0)","(61, 0)","(31, 0)","(67, 0)","(53, 0)","(24, 0)","(31, 0)","(43, 0)","(47, 0)","(57, 0)","(54, 0)","(53, 0)","(53, 0)","(36, 0)","(57, 0)",0.0,right
+"(47, 0)","(41, 0)","(54, 0)","(43, 0)","(30, 0)","(51, 0)","(84, 0)","(54, 0)","(59, 0)","(68, 0)","(39, 0)","(25, 0)","(9, 0)","(39, 0)","(42, 0)","(34, 0)","(53, 0)","(71, 0)","(44, 0)","(31, 0)","(55, 0)","(64, 0)","(55, 0)","(42, 0)",0.1,left
+"(49, 0)","(75, 0)","(44, 0)","(54, 0)","(52, 0)","(46, 0)","(50, 0)","(65, 0)","(52, 0)","(0, 0)","(54, 0)","(74, 1)","(44, 0)","(50, 0)","(54, 0)","(70, 0)","(62, 0)","(67, 0)","(66, 0)","(57, 0)","(9, 0)","(27, 0)","(36, 0)","(40, 1)",0.1,left
+"(47, 0)","(49, 0)","(46, 0)","(36, 0)","(43, 0)","(56, 0)","(64, 0)","(54, 0)","(50, 0)","(56, 0)","(42, 0)","(69, 0)","(59, 0)","(38, 0)","(33, 0)","(67, 0)","(51, 0)","(38, 0)","(47, 0)","(60, 0)","(64, 0)","(32, 0)","(46, 0)","(80, 0)",0.1,right
+"(45, 0)","(49, 0)","(46, 0)","(57, 0)","(63, 1)","(59, 0)","(45, 0)","(38, 0)","(48, 0)","(58, 0)","(21, 0)","(54, 0)","(58, 0)","(55, 0)","(42, 0)","(53, 0)","(41, 1)","(28, 0)","(22, 0)","(48, 0)","(56, 0)","(53, 0)","(42, 0)","(47, 0)",0.1,left
+"(71, 0)","(60, 0)","(68, 0)","(63, 0)","(63, 0)","(40, 0)","(39, 0)","(50, 0)","(32, 0)","(59, 0)","(51, 0)","(70, 0)","(50, 0)","(39, 0)","(39, 0)","(33, 0)","(49, 0)","(39, 0)","(54, 0)","(49, 0)","(69, 0)","(49, 0)","(69, 0)","(37, 0)",0.1,left
+"(37, 0)","(52, 0)","(50, 0)","(56, 0)","(44, 0)","(45, 1)","(49, 0)","(24, 0)","(38, 0)","(50, 0)","(46, 0)","(62, 0)","(54, 0)","(44, 0)","(23, 0)","(67, 0)","(69, 0)","(59, 1)","(47, 0)","(63, 0)","(53, 0)","(43, 0)","(77, 0)","(72, 0)",0.1,right
+"(62, 0)","(37, 0)","(41, 0)","(75, 0)","(49, 0)","(70, 0)","(38, 0)","(36, 1)","(49, 1)","(49, 0)","(49, 0)","(45, 1)","(56, 0)","(58, 0)","(67, 0)","(43, 0)","(49, 0)","(42, 0)","(54, 0)","(49, 1)","(74, 1)","(16, 0)","(37, 0)","(72, 1)",0.1,right
+"(54, 0)","(79, 0)","(45, 0)","(60, 0)","(68, 0)","(57, 0)","(55, 0)","(16, 0)","(48, 0)","(38, 0)","(80, 0)","(30, 1)","(46, 0)","(12, 0)","(47, 0)","(41, 0)","(50, 0)","(39, 0)","(47, 0)","(26, 0)","(43, 0)","(34, 0)","(41, 0)","(24, 1)",0.1,right
+"(38, 0)","(42, 0)","(59, 0)","(41, 0)","(26, 1)","(56, 0)","(62, 0)","(82, 1)","(39, 0)","(27, 1)","(45, 0)","(36, 0)","(46, 0)","(49, 0)","(27, 0)","(56, 0)","(48, 1)","(51, 0)","(49, 0)","(76, 1)","(69, 0)","(46, 1)","(43, 0)","(40, 0)",0.1,right
+"(57, 0)","(50, 0)","(26, 1)","(29, 0)","(66, 0)","(33, 0)","(38, 0)","(39, 0)","(48, 0)","(47, 0)","(70, 0)","(72, 0)","(60, 0)","(36, 0)","(26, 1)","(73, 0)","(59, 0)","(61, 0)","(61, 0)","(36, 0)","(58, 0)","(62, 0)","(72, 0)","(45, 0)",0.1,right
+"(54, 0)","(50, 0)","(76, 0)","(42, 0)","(52, 0)","(68, 0)","(46, 0)","(40, 0)","(62, 0)","(47, 0)","(53, 0)","(58, 0)","(41, 0)","(24, 0)","(35, 0)","(38, 0)","(73, 0)","(48, 0)","(46, 0)","(57, 0)","(70, 0)","(53, 0)","(38, 0)","(44, 0)",0.1,left
+"(14, 0)","(48, 0)","(47, 0)","(50, 0)","(15, 0)","(23, 0)","(33, 0)","(9, 0)","(43, 0)","(65, 0)","(29, 0)","(53, 0)","(23, 0)","(57, 0)","(83, 0)","(46, 0)","(57, 0)","(43, 0)","(54, 0)","(62, 0)","(16, 0)","(11, 0)","(65, 0)","(61, 0)",0.1,right
+"(44, 0)","(65, 0)","(47, 0)","(68, 1)","(51, 0)","(37, 0)","(59, 0)","(57, 1)","(35, 0)","(45, 1)","(58, 0)","(51, 0)","(59, 0)","(42, 0)","(30, 0)","(51, 1)","(58, 0)","(60, 0)","(75, 0)","(94, 1)","(59, 0)","(32, 1)","(36, 0)","(43, 0)",0.1,left
+"(28, 0)","(54, 0)","(41, 0)","(61, 0)","(41, 0)","(67, 0)","(24, 0)","(23, 0)","(55, 0)","(69, 0)","(42, 0)","(48, 0)","(58, 0)","(47, 0)","(49, 0)","(27, 0)","(59, 0)","(72, 0)","(65, 0)","(53, 0)","(56, 0)","(71, 0)","(51, 0)","(72, 0)",0.1,right
+"(58, 0)","(75, 0)","(25, 0)","(50, 0)","(71, 0)","(46, 0)","(57, 0)","(61, 0)","(29, 0)","(40, 0)","(68, 0)","(50, 0)","(33, 0)","(39, 0)","(75, 0)","(56, 0)","(42, 0)","(38, 0)","(57, 0)","(41, 0)","(66, 0)","(80, 0)","(47, 0)","(53, 0)",0.1,left
+"(56, 0)","(67, 0)","(49, 0)","(28, 0)","(46, 0)","(70, 0)","(26, 1)","(51, 0)","(42, 0)","(61, 1)","(75, 0)","(54, 0)","(33, 0)","(57, 0)","(33, 0)","(51, 0)","(3, 0)","(37, 0)","(75, 1)","(88, 0)","(44, 0)","(45, 1)","(45, 0)","(74, 0)",0.1,left
+"(61, 0)","(54, 0)","(28, 0)","(20, 0)","(47, 0)","(45, 0)","(41, 0)","(55, 0)","(59, 0)","(26, 0)","(38, 0)","(31, 0)","(42, 0)","(68, 0)","(33, 0)","(55, 0)","(19, 0)","(84, 0)","(79, 0)","(55, 0)","(41, 0)","(58, 0)","(53, 0)","(48, 0)",0.1,right
+"(58, 0)","(35, 0)","(73, 0)","(60, 0)","(83, 0)","(61, 0)","(28, 0)","(73, 0)","(34, 0)","(50, 0)","(71, 0)","(62, 0)","(30, 0)","(39, 0)","(52, 0)","(15, 0)","(49, 0)","(60, 0)","(50, 0)","(42, 0)","(6, 0)","(41, 0)","(44, 0)","(55, 0)",0.1,left
+"(62, 0)","(33, 0)","(33, 0)","(60, 0)","(67, 0)","(35, 0)","(23, 0)","(42, 0)","(36, 0)","(45, 0)","(35, 0)","(37, 0)","(36, 0)","(64, 0)","(76, 0)","(57, 0)","(49, 0)","(61, 0)","(42, 0)","(32, 0)","(65, 0)","(47, 0)","(36, 0)","(36, 0)",0.1,right
+"(64, 0)","(50, 0)","(31, 0)","(62, 1)","(71, 1)","(42, 0)","(18, 0)","(46, 0)","(50, 0)","(60, 0)","(77, 0)","(70, 0)","(23, 0)","(52, 0)","(28, 0)","(20, 1)","(45, 1)","(45, 0)","(61, 0)","(26, 0)","(36, 0)","(52, 0)","(31, 0)","(66, 0)",0.1,left
+"(48, 0)","(56, 0)","(57, 0)","(54, 0)","(97, 0)","(42, 0)","(64, 0)","(70, 0)","(59, 0)","(41, 0)","(57, 0)","(68, 0)","(67, 0)","(44, 0)","(43, 0)","(37, 0)","(20, 0)","(56, 0)","(65, 0)","(12, 0)","(63, 0)","(49, 0)","(63, 0)","(47, 0)",0.1,left
+"(25, 0)","(40, 0)","(48, 0)","(44, 0)","(66, 0)","(43, 0)","(21, 0)","(83, 0)","(74, 0)","(56, 1)","(43, 0)","(55, 0)","(61, 0)","(63, 0)","(51, 0)","(43, 0)","(61, 0)","(29, 0)","(64, 0)","(36, 0)","(71, 0)","(47, 1)","(46, 0)","(54, 0)",0.1,left
+"(23, 0)","(36, 0)","(32, 0)","(37, 0)","(51, 0)","(39, 0)","(39, 0)","(40, 0)","(50, 0)","(49, 0)","(76, 0)","(62, 0)","(68, 0)","(49, 0)","(45, 0)","(63, 0)","(51, 0)","(29, 0)","(34, 0)","(89, 0)","(36, 0)","(18, 0)","(46, 0)","(51, 0)",0.1,right
+"(13, 0)","(32, 0)","(39, 0)","(63, 0)","(82, 1)","(39, 0)","(54, 0)","(50, 0)","(67, 0)","(41, 0)","(75, 0)","(63, 0)","(63, 0)","(55, 0)","(62, 0)","(32, 0)","(64, 1)","(39, 0)","(46, 0)","(25, 0)","(26, 0)","(49, 0)","(55, 0)","(35, 0)",0.1,left
+"(58, 0)","(41, 0)","(45, 0)","(79, 0)","(54, 0)","(44, 0)","(51, 0)","(39, 0)","(48, 0)","(34, 0)","(57, 0)","(36, 0)","(40, 0)","(38, 0)","(63, 0)","(81, 0)","(29, 0)","(31, 0)","(29, 0)","(89, 0)","(40, 0)","(73, 0)","(27, 0)","(69, 0)",0.1,left`;
+
+let sequences  = [];
+let pid        = "";
+let trialIndex = 0;
+let correct    = 0;
+let results    = [];
+let choiceEnabled = false;
+let lastBreakAt   = -1;  // trialIndex at which a break was last shown
+
+function randn() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function normalSample(mu, sigma) { return mu + sigma * randn(); }
+
+function parseTuple(str) {
+  const clean = str.replace(/[()]/g, "").trim();
+  const parts = clean.split(",");
+  return { value: parseFloat(parts[0]), switched: parseInt(parts[1]) };
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split("\n");
+  const headers = lines[0].split(",");
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = [];
+    let inQuote = false, cur = "";
+    for (const ch of lines[i]) {
+      if (ch === '"') { inQuote = !inQuote; continue; }
+      if (ch === ',' && !inQuote) { cols.push(cur); cur = ""; }
+      else cur += ch;
+    }
+    cols.push(cur);
+    const row = {};
+    headers.forEach((h, idx) => row[h.trim()] = cols[idx]?.trim() ?? "");
+    rows.push(row);
+  }
+  return rows;
+}
+
+async function startExperiment() {
+  pid = document.getElementById("pid-input").value.trim() || "anonymous";
+  sequences = parseCSV(SEQUENCES_CSV);
+  if (!sequences.length) { alert("CSV appears empty."); return; }
+
+  document.getElementById("setup-screen").style.display = "none";
+  runTrial();
+}
+
+async function showFixation() {
+  document.getElementById("fixation-screen").style.display = "flex";
+  await sleep(FIXATION_MS);
+  document.getElementById("fixation-screen").style.display = "none";
+}
+
+function showBreak() {
+  document.getElementById("experiment-screen").style.display = "none";
+  document.getElementById("break-screen").style.display = "flex";
+}
+
+function resumeFromBreak() {
+  document.getElementById("break-screen").style.display = "none";
+  runTrial();
+}
+
+async function runTrial() {
+  if (trialIndex >= sequences.length) { showDone(); return; }
+
+  // Break check (not before the very first trial, and only once per boundary)
+  if (trialIndex > 0 && trialIndex % BREAK_EVERY === 0 && trialIndex !== lastBreakAt) {
+    lastBreakAt = trialIndex;
+    showBreak();
+    return;
+  }
+
+  await showFixation();
+
+  const row      = sequences[trialIndex];
+  const n_frames = 12;
+  const highSide = row["high_side_final"];
+
+  const frames = [];
+  for (let t = 1; t <= n_frames; t++) {
+    frames.push({
+      left:  parseTuple(row[`left_${t}`]),
+      right: parseTuple(row[`right_${t}`]),
+    });
+  }
+
+  document.getElementById("experiment-screen").style.display = "block";
+  choiceEnabled = false;
+  setBoxClickable(false);
+  setFeedback("", "");
+  clearBoxStyle();
+  setNumber("left",  "—", false);
+  setNumber("right", "—", false);
+  setQuestionVisible(false);
+  document.getElementById("frame-label").textContent = "";
+
+  for (let t = 0; t < n_frames; t++) {
+    document.getElementById("frame-label").textContent = `Frame ${t + 1} of ${n_frames}`;
+    setNumber("left",  Math.round(frames[t].left.value),  true);
+    setNumber("right", Math.round(frames[t].right.value), true);
+    await sleep(FRAME_DELAY);
+    setNumber("left",  "", false);
+    setNumber("right", "", false);
+    await sleep(100);
+  }
+
+  document.getElementById("frame-label").textContent = "";
+  setQuestionVisible(true);
+  choiceEnabled = true;
+  setBoxClickable(true);
+
+  window._currentHighSide = highSide;
+  window._currentRow      = row;
+}
+
+function choose(side) {
+  if (!choiceEnabled) return;
+  choiceEnabled = false;
+  setBoxClickable(false);
+  setQuestionVisible(false);
+
+  const highSide  = window._currentHighSide;
+  const row       = window._currentRow;
+  const isCorrect = (side === highSide);
+  const mu_chosen = (side === "left")
+    ? (highSide === "left"  ? MU_HIGH : MU_LOW)
+    : (highSide === "right" ? MU_HIGH : MU_LOW);
+  const payoff = normalSample(mu_chosen, SIGMA_M);
+
+  correct += isCorrect ? 1 : 0;
+
+  document.getElementById(`box-${side}`).classList.add(isCorrect ? "selected-correct" : "selected-wrong");
+
+  const resultRow = { participant_id: pid, trial: trialIndex + 1 };
+  for (let t = 1; t <= 12; t++) {
+    resultRow[`left_${t}`]  = row[`left_${t}`];
+    resultRow[`right_${t}`] = row[`right_${t}`];
+  }
+  resultRow["H"]               = row["H"];
+  resultRow["high_side_final"] = highSide;
+  resultRow["choice"]          = (side === "left") ? 1 : 0;  // 1 = left, 0 = right
+  resultRow["correct"]         = isCorrect ? 1 : 0;
+  resultRow["payoff"]          = payoff.toFixed(4);
+  results.push(resultRow);
+
+  setFeedback(isCorrect ? "Correct" : "Incorrect", isCorrect ? "correct" : "wrong");
+
+  trialIndex++;
+
+  setTimeout(() => {
+    setFeedback("", "");
+    clearBoxStyle();
+    setNumber("left",  "—", false);
+    setNumber("right", "—", false);
+    document.getElementById("experiment-screen").style.display = "none";
+    runTrial();
+  }, FEEDBACK_TO_NEXT_MS);
+}
+
+function showDone() {
+  document.getElementById("experiment-screen").style.display = "none";
+  const done = document.getElementById("done-screen");
+  done.style.display = "flex";
+  const total = sequences.length;
+  document.getElementById("final-acc").textContent     = (correct / total * 100).toFixed(0) + "%";
+  document.getElementById("final-correct").textContent  = correct;
+  document.getElementById("final-trials").textContent   = total;
+  document.getElementById("final-wrong").textContent    = total - correct;
+}
+
+function downloadResults() {
+  if (!results.length) return;
+  const cols  = Object.keys(results[0]);
+  const lines = [cols.join(",")];
+  for (const r of results) lines.push(cols.map(c => `"${r[c]}"`).join(","));
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "results.csv";
+  a.click();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function setNumber(side, text, show) {
+  const el = document.getElementById(`${side}-number`);
+  el.textContent = text;
+  el.classList.toggle("shown", show);
+}
+
+function clearBoxStyle() {
+  document.getElementById("box-left").className  = "box";
+  document.getElementById("box-right").className = "box";
+}
+
+function setBoxClickable(on) {
+  document.getElementById("box-left").style.pointerEvents  = on ? "auto" : "none";
+  document.getElementById("box-right").style.pointerEvents = on ? "auto" : "none";
+  document.getElementById("box-left").style.cursor  = on ? "pointer" : "default";
+  document.getElementById("box-right").style.cursor = on ? "pointer" : "default";
+}
+
+function setQuestionVisible(v) {
+  document.getElementById("question-prompt").classList.toggle("visible", v);
+}
+
+function setFeedback(msg, cls) {
+  const el = document.getElementById("feedback");
+  el.textContent = msg;
+  el.style.color = cls === "correct" ? "#1a6e1a" : cls === "wrong" ? "#aa1a1a" : "#000";
+  el.classList.toggle("visible", !!msg);
+}
+</script>
+</body>
+</html>
