@@ -11,6 +11,7 @@ N_FRAMES    = 12
 
 N_TRIALS_PER_H = 25
 H_VALUES       = [0, 0.1]   # swap probability per frame (starting frame 2)
+LAST_SWITCH_FRAME = 10      # no switches after this frame (1-indexed, inclusive)
 
 SEED        = 42    # random seed for reproducibility
 
@@ -26,7 +27,7 @@ def generate_trial(rng, h):
 
     for t in range(N_FRAMES):
         switched = False
-        if t > 0 and rng.random() < h:
+        if 0 < t < LAST_SWITCH_FRAME and rng.random() < h:
             left_is_high = not left_is_high
             switched = True
 
