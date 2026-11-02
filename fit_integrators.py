@@ -23,6 +23,7 @@ from scipy.optimize import minimize
 from scipy.special import expit
 
 from integrators import psi
+from parameters import MU_HIGH, MU_LOW, SIGMA_M
 
 
 # ---------------------------------------------------------------------------
@@ -190,17 +191,24 @@ def predict_proba_confirmation(params, d_matrix):
 
 # ---------------------------------------------------------------------------
 # 4. Normative integrator (Glaze, Kable & Gold, 2015)
-#    L(t) = psi(L(t-1), h) + d(t),   DV = L(n_frames)
+#    L(t) = psi(L(t-1), h) + coef * d(t),   DV = L(n_frames)
+#    coef = (mu_high - mu_low) / sigma_m^2 converts payout differences into
+#    log-likelihood ratios, the units psi() expects (same as
+#    integrators.normative_integrator). Without it psi saturates and h is
+#    pushed to its lower bound.
 #    h sits inside the recursive psi() update -> nonlinear joint optimization
 # ---------------------------------------------------------------------------
 
+LLR_COEF = (MU_HIGH - MU_LOW) / SIGMA_M ** 2
+
+
 def _normative_dv(d_row, h):
-    """Recursively compute the final belief L for one trial given hazard h."""
+    """Recursively compute the final belief L (log-odds) for one trial given hazard h."""
     L = 0.0
     for t, dt in enumerate(d_row):
         if t > 0:
             L = psi(L, h)
-        L = L + dt
+        L = L + LLR_COEF * dt
     return L
 
 
@@ -212,15 +220,22 @@ def _neg_ll_normative(params, d_matrix, y):
     return -np.sum(y * np.log(p) + (1 - y) * np.log(1 - p))
 
 
-def fit_normative(d_matrix, y, init=(0, 0.01, 0.1)):
+def fit_normative(d_matrix, y, h_inits=(0.01, 0.05, 0.1, 0.2, 0.3, 0.45)):
     """
+    The likelihood surface over h has local optima, so fit once from each
+    starting h in h_inits and keep the best (highest-ll) result.
+
     Returns dict: params=[a, b, h], ll, n, k
     """
     bounds = [(None, None), (None, None), (1e-6, 0.5)]
-    result = minimize(_neg_ll_normative, init, args=(d_matrix, y),
-                       method='L-BFGS-B', bounds=bounds)
+    best = None
+    for h0 in h_inits:
+        result = minimize(_neg_ll_normative, (0, 1.0, h0), args=(d_matrix, y),
+                          method='L-BFGS-B', bounds=bounds)
+        if best is None or result.fun < best.fun:
+            best = result
 
-    return {'params': result.x, 'll': -result.fun, 'n': len(y), 'k': 3}
+    return {'params': best.x, 'll': -best.fun, 'n': len(y), 'k': 3}
 
 
 def predict_proba_normative(params, d_matrix):
