@@ -6,16 +6,19 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 MU_HIGH     = 53
 MU_LOW      = 47
-SIGMA_M     = 15    # machine noise (std of each slot machine)
+SIGMA_M     = 8     # machine noise (std of each slot machine)
 N_FRAMES    = 12
 
 N_TRIALS_PER_H = 25
-H_VALUES       = [0, 0.1]   # swap probability per frame (starting frame 2)
+H_VALUES       = [0, 0.1, 0.3]   # swap probability per frame (starting frame 2)
 LAST_SWITCH_FRAME = 10      # no switches after this frame (1-indexed, inclusive)
 
 SEED        = 42    # random seed for reproducibility
 
 OUTPUT_FILE = "sequences.csv"
+
+PRACTICE_H_VALUES = [0, 0.1, 0.3, 0.1, 0.3]  # one practice trial per entry
+PRACTICE_FILE     = "practice_sequences.csv"
 
 # ---------------------------------------------------------------------------
 # Generate one trial's sequence for a given hazard rate h
@@ -64,8 +67,18 @@ for h in H_VALUES:
         row["high_side_final"] = final_high_side
         rows.append(row)
 
-# Keep the two H conditions as separate blocks, in H_VALUES order
-# (no shuffling — all H=0 trials first, then all H=0.1 trials)
+# Keep the H conditions as separate blocks, in H_VALUES order
+# (no shuffling — all H=0 trials first, then H=0.1, then H=0.3)
+
+# Practice trials (drawn after the main trials, from the same rng)
+practice_rows = []
+for h in PRACTICE_H_VALUES:
+    tuples_left, tuples_right, final_high_side = generate_trial(rng, h)
+    row = {f"left_{t+1}": tuples_left[t] for t in range(N_FRAMES)}
+    row.update({f"right_{t+1}": tuples_right[t] for t in range(N_FRAMES)})
+    row["H"] = h
+    row["high_side_final"] = final_high_side
+    practice_rows.append(row)
 
 # ---------------------------------------------------------------------------
 # Save to CSV
@@ -76,6 +89,10 @@ df = pd.DataFrame(rows, columns=left_cols + right_cols + ["H", "high_side_final"
 
 df.to_csv(OUTPUT_FILE, index=False)
 print(f"Saved {len(df)} trials to '{OUTPUT_FILE}'")
+
+practice_df = pd.DataFrame(practice_rows, columns=left_cols + right_cols + ["H", "high_side_final"])
+practice_df.to_csv(PRACTICE_FILE, index=False)
+print(f"Saved {len(practice_df)} practice trials to '{PRACTICE_FILE}'")
 print(f"Parameters: H values={H_VALUES} ({N_TRIALS_PER_H} trials each), "
       f"MU_HIGH={MU_HIGH}, MU_LOW={MU_LOW}, SIGMA_M={SIGMA_M}, seed={SEED}")
 print(f"Shape: {df.shape}  ({len(df)} rows x {len(df.columns)} cols)")
