@@ -346,6 +346,16 @@
     font-weight: bold;
     color: #000;
   }
+
+  /* INTRO PAGES + DEMO ANIMATION */
+  .intro-page { display: none; flex-direction: column; align-items: center; gap: 1.2rem; width: 100%; }
+  .intro-page.current { display: flex; }
+  .blue-word { color: #1d4ed8; font-weight: bold; }
+  .red-word  { color: #c81e1e; font-weight: bold; }
+  .demo-svg { width: 100%; height: auto; display: block; }
+  .demo-caption { font-size: 0.8rem; color: #555; line-height: 1.5; text-align: center; }
+  .btn-row { display: flex; gap: 0.8rem; width: 100%; }
+  .btn.secondary { background: #fff; color: #000; border: 1px solid #000; }
 </style>
 </head>
 <body>
@@ -354,23 +364,60 @@
 <div id="setup-screen">
   <h1>Distribution Judgment Task</h1>
 
-  <div class="instructions">
-    <p>How to play:</p>
-    <ul>
-      <li>In each round, you will see two series of numbers, one in each box.</li>
-      <li>The numbers are past results of two slot machines in a casino.</li>
-      <li>One machine gives higher results on average.</li>
-      <li>After the last number appears, click the machine you think has the higher average.</li>
-      <li>You will start with 5 practice rounds.</li>
-    </ul>
+  <!-- INTRO PAGE 1: the two sources and their overlapping distributions -->
+  <div class="intro-page current" id="intro-1">
+    <div class="instructions">
+      <p>The two machines</p>
+      <ul>
+        <li>In this game there are two slot machines: a <span class="blue-word">blue machine</span> and a <span class="red-word">red machine</span>.</li>
+        <li>Each time a machine is played, it gives out a number.</li>
+        <li>The blue machine gives higher numbers on average than the red machine.</li>
+        <li>But both machines are random, and the numbers they give overlap, as the picture shows. Sometimes the red machine gives a higher number than the blue one.</li>
+      </ul>
+    </div>
+    <svg id="curves-static" class="demo-svg" viewBox="0 0 460 150" aria-label="Two overlapping distributions: blue is centred slightly higher than red"></svg>
+    <button class="btn" onclick="showIntroPage(2)">Next</button>
   </div>
 
-  <div class="setup-field">
-    <label>Participant ID</label>
-    <input id="pid-input" type="text" placeholder="e.g. P001" />
+  <!-- INTRO PAGE 2: turn-taking / switches + animation of the generative process -->
+  <div class="intro-page" id="intro-2">
+    <div class="instructions">
+      <p>How a round works</p>
+      <ul>
+        <li>The screen has two boxes, left and right. One machine puts its numbers in the left box, and the other machine puts its numbers in the right box.</li>
+        <li>In each round, both boxes show a new number at the same time, 12 times in a row.</li>
+        <li>The machines take turns: at any point in a round they can switch sides. Sometimes they switch often, sometimes rarely, and sometimes not at all. You will not be told when a switch happens.</li>
+      </ul>
+    </div>
+    <svg id="demo-svg" class="demo-svg" viewBox="0 0 460 360" aria-label="Example round: numbers from the blue and red machines appear in the boxes, and the machines switch sides halfway"></svg>
+    <p class="demo-caption">In this example the machines are shown in color. In the real game the boxes are grey and you only see the numbers.</p>
+    <div class="btn-row">
+      <button class="btn secondary" onclick="showIntroPage(1)">Back</button>
+      <button class="btn secondary" id="demo-replay" onclick="playDemo()">Replay example</button>
+      <button class="btn" id="demo-next" onclick="showIntroPage(3)" disabled>Next</button>
+    </div>
   </div>
 
-  <button class="btn" onclick="startExperiment()">Begin Task</button>
+  <!-- INTRO PAGE 3: the response -->
+  <div class="intro-page" id="intro-3">
+    <div class="instructions">
+      <p>Your task</p>
+      <ul>
+        <li>Follow the numbers throughout the whole round.</li>
+        <li>After the 12th number, click the box you think had the higher average at the very end of the round.</li>
+        <li>After each choice you will see whether you were correct.</li>
+        <li>You will start with 5 practice rounds.</li>
+      </ul>
+    </div>
+    <div class="setup-field">
+      <label>Participant ID</label>
+      <input id="pid-input" type="text" placeholder="e.g. P001" />
+    </div>
+    <div class="btn-row">
+      <button class="btn secondary" onclick="showIntroPage(2)">Back</button>
+      <button class="btn" onclick="startExperiment()">Begin Task</button>
+    </div>
+  </div>
 </div>
 
 <!-- FIXATION -->
@@ -388,9 +435,9 @@
 <!-- COMPREHENSION CHECK (shown once, after the first break) -->
 <div id="comp-screen">
   <h2>Quick question</h2>
-  <p>In the next part, is the machine with the higher average always the same during a round, or can it change?</p>
-  <button class="btn" onclick="answerComp('same')">Always the same</button>
-  <button class="btn" onclick="answerComp('change')">It can change during a round</button>
+  <p>During a round, does the blue machine always stay on the same side, or can it switch sides?</p>
+  <button class="btn" onclick="answerComp('same')">It always stays on the same side</button>
+  <button class="btn" onclick="answerComp('change')">It can switch sides during a round</button>
   <p id="comp-feedback"></p>
 </div>
 
@@ -411,15 +458,15 @@
 <!-- SWITCH PRACTICE: marked switches (before the first dynamic block) -->
 <div id="dyn-marked-screen" class="info-screen">
   <h2>Practice with switches</h2>
-  <p>You will now play 3 practice rounds in which the machines may switch.</p>
-  <p>In these rounds, the word "Switch!" will appear on the screen whenever the machines switch.</p>
+  <p>You will now play 3 practice rounds in which the machines may switch sides.</p>
+  <p>In these rounds, the word "Switch!" will appear on the screen whenever the machines switch sides.</p>
   <button class="btn" onclick="startDynPractice('practice_marked')">Start practice</button>
 </div>
 
 <!-- SWITCH PRACTICE: unmarked switches -->
 <div id="dyn-unmarked-screen" class="info-screen">
   <h2>Practice without marking</h2>
-  <p>In the next 3 practice rounds, the machines may still switch, but switches will no longer be marked.</p>
+  <p>In the next 3 practice rounds, the machines may still switch sides, but switches will no longer be marked.</p>
   <button class="btn" onclick="startDynPractice('practice_unmarked')">Start practice</button>
 </div>
 
@@ -443,7 +490,7 @@
   </div>
 
   <div id="switch-label"></div>
-  <div id="question-prompt">Which machine has the higher average?</div>
+  <div id="question-prompt">Which box has the higher average at the end of the round?</div>
   <div id="feedback"></div>
 </div>
 
@@ -563,11 +610,11 @@ const SEQUENCES_CSV = `left_1,left_2,left_3,left_4,left_5,left_6,left_7,left_8,l
 "(65, 0)","(43, 0)","(55, 1)","(57, 1)","(50, 0)","(42, 0)","(53, 0)","(47, 0)","(33, 0)","(45, 0)","(62, 0)","(46, 0)","(52, 0)","(63, 0)","(55, 1)","(60, 1)","(60, 0)","(67, 0)","(54, 0)","(64, 0)","(51, 0)","(39, 0)","(58, 0)","(50, 0)",0.2,right`;
 
 const PRACTICE_CSV = `left_1,left_2,left_3,left_4,left_5,left_6,left_7,left_8,left_9,left_10,left_11,left_12,right_1,right_2,right_3,right_4,right_5,right_6,right_7,right_8,right_9,right_10,right_11,right_12,H,high_side_final
-"(49, 0)","(55, 0)","(61, 0)","(58, 0)","(56, 0)","(53, 0)","(69, 0)","(40, 0)","(36, 0)","(36, 0)","(64, 0)","(56, 0)","(56, 0)","(48, 0)","(40, 0)","(52, 0)","(44, 0)","(43, 0)","(33, 0)","(46, 0)","(50, 0)","(54, 0)","(59, 0)","(47, 0)",0.0,left
-"(60, 0)","(49, 0)","(51, 0)","(65, 1)","(56, 0)","(63, 0)","(61, 0)","(57, 0)","(64, 0)","(46, 0)","(57, 0)","(40, 0)","(62, 0)","(57, 0)","(71, 0)","(48, 1)","(40, 0)","(58, 0)","(46, 0)","(55, 0)","(49, 0)","(64, 0)","(53, 0)","(40, 0)",0.1,left
-"(49, 0)","(49, 1)","(55, 0)","(45, 0)","(36, 1)","(42, 0)","(42, 0)","(41, 0)","(42, 0)","(49, 1)","(64, 0)","(46, 0)","(38, 0)","(58, 1)","(56, 0)","(45, 0)","(40, 1)","(50, 0)","(53, 0)","(66, 0)","(65, 0)","(46, 1)","(59, 0)","(47, 0)",0.2,left
-"(39, 0)","(56, 0)","(51, 1)","(58, 0)","(45, 0)","(66, 0)","(72, 0)","(54, 0)","(53, 0)","(39, 1)","(51, 0)","(41, 0)","(53, 0)","(63, 0)","(52, 1)","(46, 0)","(59, 0)","(43, 0)","(39, 0)","(57, 0)","(42, 0)","(52, 1)","(45, 0)","(50, 0)",0.1,right
-"(44, 0)","(45, 0)","(53, 0)","(51, 0)","(60, 0)","(57, 1)","(61, 0)","(54, 0)","(57, 1)","(39, 0)","(44, 0)","(55, 0)","(54, 0)","(53, 0)","(64, 0)","(51, 0)","(57, 0)","(57, 1)","(41, 0)","(33, 0)","(38, 1)","(52, 0)","(64, 0)","(57, 0)",0.2,right`;
+"(49, 0)","(55, 0)","(61, 0)","(58, 0)","(56, 0)","(53, 0)","(69, 0)","(40, 0)","(36, 0)","(36, 0)","(64, 0)","(56, 0)","(56, 0)","(48, 0)","(40, 0)","(52, 0)","(44, 0)","(43, 0)","(33, 0)","(46, 0)","(50, 0)","(54, 0)","(59, 0)","(47, 0)",0,left
+"(60, 0)","(49, 0)","(51, 0)","(59, 0)","(50, 0)","(57, 0)","(55, 0)","(51, 0)","(58, 0)","(40, 0)","(51, 0)","(34, 0)","(62, 0)","(57, 0)","(71, 0)","(54, 0)","(46, 0)","(64, 0)","(52, 0)","(61, 0)","(55, 0)","(70, 0)","(59, 0)","(46, 0)",0,right
+"(49, 0)","(43, 0)","(49, 0)","(39, 0)","(36, 0)","(42, 0)","(42, 0)","(41, 0)","(42, 0)","(43, 0)","(58, 0)","(40, 0)","(38, 0)","(64, 0)","(62, 0)","(51, 0)","(40, 0)","(50, 0)","(53, 0)","(66, 0)","(65, 0)","(52, 0)","(65, 0)","(53, 0)",0,right
+"(39, 0)","(56, 0)","(45, 0)","(52, 0)","(39, 0)","(60, 0)","(66, 0)","(48, 0)","(47, 0)","(39, 0)","(51, 0)","(41, 0)","(53, 0)","(63, 0)","(58, 0)","(52, 0)","(65, 0)","(49, 0)","(45, 0)","(63, 0)","(48, 0)","(52, 0)","(45, 0)","(50, 0)",0,right
+"(44, 0)","(45, 0)","(53, 0)","(51, 0)","(60, 0)","(51, 0)","(55, 0)","(48, 0)","(57, 0)","(39, 0)","(44, 0)","(55, 0)","(54, 0)","(53, 0)","(64, 0)","(51, 0)","(57, 0)","(63, 0)","(47, 0)","(39, 0)","(38, 0)","(52, 0)","(64, 0)","(57, 0)",0,right`;
 
 const PRACTICE_DYN_CSV = `left_1,left_2,left_3,left_4,left_5,left_6,left_7,left_8,left_9,left_10,left_11,left_12,right_1,right_2,right_3,right_4,right_5,right_6,right_7,right_8,right_9,right_10,right_11,right_12,H,high_side_final
 "(50, 0)","(44, 1)","(55, 0)","(30, 0)","(53, 0)","(44, 0)","(54, 0)","(38, 1)","(33, 0)","(44, 0)","(46, 0)","(37, 0)","(46, 0)","(54, 1)","(46, 0)","(49, 0)","(53, 0)","(46, 0)","(48, 0)","(54, 1)","(54, 0)","(46, 0)","(68, 0)","(44, 0)",0.2,right
@@ -576,6 +623,160 @@ const PRACTICE_DYN_CSV = `left_1,left_2,left_3,left_4,left_5,left_6,left_7,left_
 "(48, 0)","(54, 1)","(48, 0)","(49, 0)","(44, 0)","(47, 0)","(59, 1)","(41, 0)","(45, 0)","(62, 1)","(34, 0)","(40, 0)","(45, 0)","(45, 1)","(67, 0)","(42, 0)","(50, 0)","(49, 0)","(53, 1)","(49, 0)","(47, 0)","(68, 1)","(73, 0)","(61, 0)",0.2,right
 "(45, 0)","(57, 0)","(54, 0)","(58, 0)","(45, 0)","(59, 0)","(58, 1)","(46, 1)","(48, 1)","(41, 1)","(47, 0)","(44, 0)","(51, 0)","(49, 0)","(46, 0)","(53, 0)","(42, 0)","(55, 0)","(64, 1)","(60, 1)","(50, 1)","(52, 1)","(71, 0)","(37, 0)",0.2,left
 "(65, 0)","(38, 0)","(32, 1)","(36, 0)","(56, 1)","(59, 0)","(55, 0)","(44, 1)","(50, 0)","(42, 0)","(42, 0)","(55, 0)","(48, 0)","(42, 0)","(54, 1)","(49, 0)","(49, 1)","(56, 0)","(51, 0)","(50, 1)","(52, 0)","(48, 0)","(43, 0)","(54, 0)",0.2,right`;
+
+
+// ================= INTRO: pages + generative-process animation =================
+// Mirrors Glaze et al. (2015): participants are shown the two overlapping source
+// distributions, told the sources "take turns" with switches that are sometimes
+// fast and sometimes slow (rate never stated), then shown an animation of a sample
+// sequence. The demo sequence is FIXED so every participant sees the same example.
+const DEMO_COLORS = { blue: "#1d4ed8", red: "#c81e1e", blueFill: "rgba(29,78,216,0.15)", redFill: "rgba(200,30,30,0.15)" };
+const DEMO_FRAMES = [  // [blue sample, red sample]; blue is on the RIGHT for frames 1-6, LEFT for 7-12
+  [58, 44], [50, 46], [61, 49], [47, 52], [56, 41], [59, 48],
+  [55, 45], [60, 50], [52, 43], [49, 51], [62, 46], [57, 44]
+];
+const DEMO_SWITCH_BEFORE = 6;      // 0-based frame index at which the machines switch sides
+const DEMO_FRAME_MS = 1400;        // slower than the real task so the process is easy to follow
+const SVGNS = "http://www.w3.org/2000/svg";
+const AX = { vmin: 20, vmax: 80, x0: 40, x1: 420 };
+const xOf = v => AX.x0 + (v - AX.vmin) / (AX.vmax - AX.vmin) * (AX.x1 - AX.x0);
+const pdfY = (v, mu, base) => base - 85 * Math.exp(-((v - mu) ** 2) / (2 * SIGMA_M ** 2));
+
+function el(tag, attrs, parent, text) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function drawCurves(svg, base) {
+  for (const [mu, stroke, fill] of [[MU_LOW, DEMO_COLORS.red, DEMO_COLORS.redFill], [MU_HIGH, DEMO_COLORS.blue, DEMO_COLORS.blueFill]]) {
+    let d = `M ${xOf(AX.vmin)} ${base}`;
+    for (let v = AX.vmin; v <= AX.vmax; v += 0.5) d += ` L ${xOf(v).toFixed(1)} ${pdfY(v, mu, base).toFixed(1)}`;
+    d += ` L ${xOf(AX.vmax)} ${base} Z`;
+    el("path", { d, fill, stroke, "stroke-width": 2 }, svg);
+  }
+  el("line", { x1: AX.x0, x2: AX.x1, y1: base, y2: base, stroke: "#000", "stroke-width": 1 }, svg);
+  for (let v = 30; v <= 70; v += 10) {
+    el("line", { x1: xOf(v), x2: xOf(v), y1: base, y2: base + 5, stroke: "#000" }, svg);
+    el("text", { x: xOf(v), y: base + 18, "text-anchor": "middle", "font-size": 11, fill: "#444" }, svg, v);
+  }
+  el("text", { x: xOf(MU_HIGH) + 34, y: base - 72, "font-size": 12, "font-weight": "bold", fill: DEMO_COLORS.blue }, svg, "Blue machine");
+  el("text", { x: xOf(MU_LOW) - 34, y: base - 72, "font-size": 12, "font-weight": "bold", fill: DEMO_COLORS.red, "text-anchor": "end" }, svg, "Red machine");
+}
+
+function showIntroPage(n) {
+  document.querySelectorAll(".intro-page").forEach(p => p.classList.remove("current"));
+  document.getElementById(`intro-${n}`).classList.add("current");
+  if (n === 2) playDemo(); else demoRun++;   // leaving page 2 stops the animation
+}
+
+// --- demo scene ---
+const BOX = { y: 172, size: 110, left: 70, right: 280 };
+const boxCx = side => (side === "left" ? BOX.left : BOX.right) + BOX.size / 2;
+const BOX_CY = BOX.y + BOX.size / 2;
+let demo = null;
+let demoRun = 0;
+
+function buildDemoScene() {
+  const svg = document.getElementById("demo-svg");
+  svg.innerHTML = "";
+  drawCurves(svg, 120);
+  const msg = el("text", { x: 230, y: 160, "text-anchor": "middle", "font-size": 15, "font-weight": "bold", fill: "#aa1a1a" }, svg, "");
+  const boxes = {}, nums = {};
+  for (const side of ["left", "right"]) {
+    boxes[side] = el("rect", { x: side === "left" ? BOX.left : BOX.right, y: BOX.y, width: BOX.size, height: BOX.size, rx: 10, fill: "#f5f5f5", stroke: "#ccc", "stroke-width": 3 }, svg);
+    nums[side] = el("text", { x: boxCx(side), y: BOX_CY + 14, "text-anchor": "middle", "font-size": 40, "font-weight": "bold", fill: "#000" }, svg, "");
+  }
+  el("text", { x: 230, y: BOX_CY + 12, "text-anchor": "middle", "font-size": 34, "font-weight": "bold" }, svg, "+");
+  const pills = {};
+  for (const m of ["blue", "red"]) {
+    const g = el("g", {}, svg);
+    el("rect", { x: -48, y: -12, width: 96, height: 24, rx: 12, fill: DEMO_COLORS[m] }, g);
+    el("text", { x: 0, y: 4, "text-anchor": "middle", "font-size": 12, "font-weight": "bold", fill: "#fff" }, g, m === "blue" ? "Blue machine" : "Red machine");
+    pills[m] = g;
+  }
+  const counter = el("text", { x: 230, y: 350, "text-anchor": "middle", "font-size": 12, fill: "#666" }, svg, "");
+  const layer = el("g", {}, svg);   // flying sample tokens
+  demo = { svg, msg, boxes, nums, pills, counter, layer, side: { blue: "right", red: "left" } };
+  placePills(0);
+  colorBoxes();
+}
+
+function placePills(t) {   // t: 0 = blue right, 1 = blue left (tweened during a switch)
+  const y = 308, xl = boxCx("left"), xr = boxCx("right");
+  demo.pills.blue.setAttribute("transform", `translate(${xr - (xr - xl) * t} ${y})`);
+  demo.pills.red.setAttribute("transform",  `translate(${xl + (xr - xl) * t} ${y})`);
+}
+function colorBoxes() {
+  demo.boxes[demo.side.blue].setAttribute("stroke", DEMO_COLORS.blue);
+  demo.boxes[demo.side.red].setAttribute("stroke", DEMO_COLORS.red);
+}
+
+function tween(ms, fn, run) {
+  return new Promise(res => {
+    const t0 = performance.now();
+    function step(now) {
+      if (run !== demoRun) return res();
+      const t = Math.min(1, (now - t0) / ms);
+      fn(0.5 - 0.5 * Math.cos(Math.PI * t));   // ease in-out
+      t < 1 ? requestAnimationFrame(step) : res();
+    }
+    requestAnimationFrame(step);
+  });
+}
+const demoSleep = (ms, run) => new Promise(r => setTimeout(r, ms)).then(() => run === demoRun);
+
+async function flySample(machine, value, run) {
+  const mu = machine === "blue" ? MU_HIGH : MU_LOW;
+  const sx = xOf(value), sy = pdfY(value, mu, 120);
+  const dot = el("circle", { cx: sx, cy: sy, r: 5, fill: DEMO_COLORS[machine] }, demo.layer);
+  const tok = el("g", {}, demo.layer);
+  el("circle", { r: 15, fill: DEMO_COLORS[machine] }, tok);
+  el("text", { y: 5, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#fff" }, tok, value);
+  const side = demo.side[machine], tx = boxCx(side), ty = BOX_CY;
+  await tween(550, k => tok.setAttribute("transform", `translate(${sx + (tx - sx) * k} ${sy + (ty - sy) * k})`), run);
+  tok.remove();
+  demo.nums[side].textContent = value;
+  setTimeout(() => dot.remove(), 600);
+}
+
+async function playDemo() {
+  const run = ++demoRun;
+  document.getElementById("demo-next").disabled = !demoSeen;
+  buildDemoScene();
+  if (!(await demoSleep(600, run))) return;
+  for (let t = 0; t < DEMO_FRAMES.length; t++) {
+    if (t === DEMO_SWITCH_BEFORE) {
+      demo.msg.textContent = "Switch!";
+      demo.counter.textContent = "";
+      await tween(800, k => placePills(k), run);
+      if (run !== demoRun) return;
+      demo.side = { blue: "left", red: "right" };
+      colorBoxes();
+      if (!(await demoSleep(500, run))) return;
+    }
+    demo.counter.textContent = `Number ${t + 1} of ${DEMO_FRAMES.length}`;
+    const [b, r] = DEMO_FRAMES[t];
+    await Promise.all([flySample("blue", b, run), flySample("red", r, run)]);
+    if (!(await demoSleep(DEMO_FRAME_MS - 550, run))) return;
+    demo.nums.left.textContent = demo.nums.right.textContent = "";
+    demo.msg.textContent = "";
+    if (!(await demoSleep(150, run))) return;
+  }
+  demo.counter.textContent = "";
+  demo.msg.textContent = "Which box has the higher average at the end?";
+  if (!(await demoSleep(1800, run))) return;
+  demo.boxes[demo.side.blue].setAttribute("fill", "#d6f5d6");
+  demo.msg.textContent = "The left box (blue machine) is the correct choice.";
+  demoSeen = true;
+  document.getElementById("demo-next").disabled = false;
+}
+let demoSeen = false;
+
+drawCurves(document.getElementById("curves-static"), 120);
+// ================= END INTRO =================
 
 let practiceSeqs = [];
 let practiceIndex = 0;
@@ -656,8 +857,8 @@ async function showFixation() {
 // that the switching rate changes. They have to pick this up from the data.
 const BREAK_TEXTS = [
   `<p>You have completed the first part. Take a moment to rest.</p>
-   <p>In the next part, the machines may switch during a round: the machine with the higher average can become the lower one, and the other way around.</p>
-   <p>After the last number appears, click the machine you think has the higher average at the end of the round.</p>
+   <p>Remember: the blue and red machines can switch sides at any point in a round. Sometimes they switch often, sometimes rarely, and sometimes not at all.</p>
+   <p>After the last number appears, click the box you think the blue machine is in at the end of the round.</p>
    <p>Click the button below when you are ready to continue.</p>`,
   `<p>You have completed a set of trials. Take a moment to rest, then click the button below when you are ready to continue.</p>`
 ];
@@ -688,7 +889,7 @@ function answerComp(ans) {
     document.getElementById("dyn-marked-screen").style.display = "flex";  // switch practice before the dynamic block
   } else {
     document.getElementById("comp-feedback").textContent =
-      "Not quite. In the next part, the machine with the higher average can change during a round. Please try again.";
+      "Not quite. The blue machine can switch sides with the red machine at any point in a round. Please try again.";
   }
 }
 

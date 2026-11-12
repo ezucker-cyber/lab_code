@@ -17,7 +17,7 @@ SEED        = 42    # random seed for reproducibility
 
 OUTPUT_FILE = "sequences.csv"
 
-PRACTICE_H_VALUES = [0, 0.1, 0.2, 0.1, 0.2]  # one practice trial per entry
+PRACTICE_H_VALUES = [0] * 5  # no switches: switching is introduced later
 PRACTICE_FILE     = "practice_sequences.csv"
 
 PRACTICE_DYN_H_VALUES = [0.2] * 6  # dynamic (switching) practice trials
